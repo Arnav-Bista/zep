@@ -76,3 +76,39 @@ type SummaryPromptTemplateData struct {
 	PrevSummary    string
 	MessagesJoined string
 }
+
+const defaultFactPromptTemplate = `
+Provided the messages sent by the human, identify a fact that is true and verifiable.
+You will also be provided some existing facts extracted from previous conversations if any. Review these facts and edit
+them as needed to ensure they are accurate and relevant to the current conversation. Do not generate any duplicate facts.
+Write the facts in the format "Fact: [fact]" separated by a new line for each additional fact. If there are no new facts to add, orno facts to edit, or if the conversation is meaningless, return "Fact: None". If there are any contradicting facts, you may try to resolve them, or remove the contradicting facts.
+
+EXAMPLE
+User Messages:
+Human: I'm thinking about travelling to Paris next summer with three friends.
+Human: I recently gave Led Zeppelin's first album a listen, turns out it's pretty good.
+Human: I love running when its cloudy outside.
+Human: I dont really like the Beatles.
+
+Existing Facts:
+Fact: The user is a fan of Queen.
+Fact: The user has no plans to listen to Led Zeppelin's first album.
+Fact: The user frequently goes bouldering at the local gym.
+Fact: The user has no current plans to travel.
+
+New Facts: 
+Fact: The user recently listened to Led Zepplin's first album.
+Fact: The user is a fan of Queen and dislikes the Beatles.
+Fact: The user is considering travelling to Paris next summer with three friends.
+Fact: The user enjoys running when it's cloudy outside.
+
+EXAMPLE END
+
+Existing Facts: 
+{{.PrevFactsJoined}}
+
+User Messages:
+{{.MessagesJoined}}
+`
+
+
