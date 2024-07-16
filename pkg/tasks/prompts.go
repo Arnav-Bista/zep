@@ -111,4 +111,7 @@ User Messages:
 {{.MessagesJoined}}
 `
 
-
+type FactPromptTemplateData struct {
+	PrevFactsJoined  string
+	MessagesJoined   string
+}

@@ -37,6 +37,8 @@ type MemoryDAO struct {
 //   - all messages since the last SummaryPoint, if lastNMessages == 0
 //   - if no Summary (and no SummaryPoint) exists and lastNMessages == 0, returns
 //     all undeleted messages up to the configured message window
+//	 CUSTOM ADDITION
+//	 - All facts for that sessoion
 func (m *MemoryDAO) Get(
 	ctx context.Context,
 	lastNMessages int,
@@ -69,10 +71,24 @@ func (m *MemoryDAO) Get(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get messages: %w", err)
 	}
+	// CUSTOM ADDITIONS
+	
+	factDAO, err := NewFactDAO(m.db, m.appState, m.sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create factDAO: %w", err)
+	}
+
+	var facts []models.Fact
+	facts, err = factDAO.GetAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get facts: %w", err)
+	}
+
 
 	memory := models.Memory{
 		Messages: messages,
 		Summary:  summary,
+		Facts:    facts,
 	}
 
 	return &memory, nil

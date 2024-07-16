@@ -122,6 +122,8 @@ func (pms *PostgresMemoryStore) ListSessionsOrdered(
 //   - all messages since the last SummaryPoint, if lastNMessages == 0
 //   - if no Summary (and no SummaryPoint) exists and lastNMessages == 0, returns
 //     all undeleted messages up to the configured message window
+//   CUSTOM ADDITION
+//   - all facts for that session
 func (pms *PostgresMemoryStore) GetMemory(
 	ctx context.Context,
 	sessionID string,
@@ -293,6 +295,29 @@ func (pms *PostgresMemoryStore) PutSummaryEmbedding(
 
 	return summaryDAO.PutEmbedding(ctx, embedding)
 }
+
+// CUSTOM
+
+func (pms *PostgresMemoryStore) CreateFacts(
+	ctx context.Context,
+	sessionID string,
+	facts []models.Fact,
+) error {
+	factDAO, err := NewFactDAO(pms.Client, pms.appState, sessionID)
+	if err != nil {
+		return fmt.Errorf("failed to create factDAO: %w", err)
+	}
+	_, err = factDAO.CreateMany(ctx, facts)
+	if err != nil {
+		return fmt.Errorf("failed to create facts: %w", err)
+	}
+	// TODO: PUBLISHING
+	
+	return nil
+}
+
+
+// CUSTOM END
 
 func (pms *PostgresMemoryStore) UpdateMessages(
 	ctx context.Context,

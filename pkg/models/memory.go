@@ -37,8 +37,27 @@ type Summary struct {
 	TokenCount       int                    `json:"token_count"`
 }
 
+// CUSTOM
+type Fact struct {
+	UUID       uuid.UUID              `json:"uuid"`
+	CreatedAt  time.Time              `json:"created_at"`
+	UpdatedAt  time.Time              `json:"updated_at"`
+	Content		 string                 `json:"content"`
+	TokenCount int                    `json:"token_count"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty"`
+}
+
+type FactListResponse struct {
+	Facts   []Fact `json:"facts"`
+	TotalCount int       `json:"total_count"`
+	RowCount   int       `json:"row_count"`
+}
+// CUSTOM END
+	
+
 type Memory struct {
 	Messages []Message              `json:"messages"`
+	Facts    []Fact								  `json:"facts"`
 	Summary  *Summary               `json:"summary,omitempty"`
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }

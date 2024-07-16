@@ -12,6 +12,7 @@ type MemoryStore[T any] interface {
 	MessageStorer
 	SessionStorer
 	SummaryStorer
+	FactStorer
 	// PurgeDeleted hard deletes all deleted data in the MemoryStore.
 	PurgeDeleted(ctx context.Context) error
 	// Close is called when the application is shutting down. This is a good place to clean up any resources used by
@@ -94,6 +95,8 @@ type MemoryStorer interface {
 	//   - all messages since the last SummaryPoint, if lastNMessages == 0
 	//   - if no Summary (and no SummaryPoint) exists and lastNMessages == 0, returns
 	//     all undeleted messages
+	//   CUSTOM ADDITION
+	//	 - All Facts for that session
 	GetMemory(ctx context.Context,
 		sessionID string,
 		lastNMessages int) (*Memory, error)
@@ -140,3 +143,15 @@ type SummaryStorer interface {
 		sessionID string,
 		embedding *TextData) error
 }
+
+// CUSTOM
+type FactStorer interface {
+	// Creates Facts for a given SessionID
+	CreateFacts(
+		ctx context.Context,
+		sessionID string,
+		facts []Fact,
+	) error
+}
+
+// CUSTOM END
