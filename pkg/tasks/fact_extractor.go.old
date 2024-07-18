@@ -8,14 +8,15 @@ import (
 	"time"
 
 	"github.com/ThreeDotsLabs/watermill/message"
+	"github.com/google/uuid"
 	llms2 "github.com/tmc/langchaingo/llms"
 
 	"github.com/getzep/zep/internal"
-	"github.com/getzep/zep/pkg/llms"
+	// "github.com/getzep/zep/pkg/llms"
 	"github.com/getzep/zep/pkg/models"
 )
 
-const MaxTokensFallback = 2048
+// const MaxTokensFallback = 2048
 const FactMaxOutputTokens = 1024
 
 var _ models.Task = &FactExtractorTask{}
@@ -28,13 +29,19 @@ var _ models.Task = &FactExtractorTask{}
 
 type FactExtractorTask struct {
 	BaseTask
+	uuid.UUID	
+	// hasSummarized <-chan bool
 }
 
-func NewFactExtractorTask(appState *models.AppState) *FactExtractorTask {
+func NewFactExtractorTask(appState *models.AppState,
+
+// hasSummarized chan bool
+) *FactExtractorTask {
 	return &FactExtractorTask{
 		BaseTask: BaseTask{
 			appState: appState,
 		},
+		// hasSummarized: hasSummarized,
 	}
 }
 
@@ -42,6 +49,14 @@ func (t *FactExtractorTask) Execute(
 	ctx context.Context,
 	msg *message.Message,
 ) error {
+	// Only generate facts when summary has been created
+	log.Debug("STARTING THE FACT FACTORY ============================================================================")
+	// hasSummarized := <-t.hasSummarized
+	// if !hasSummarized {
+	// log.Debug("FACT FACTORY IS NOT NEEDED!?!!? ============================================================================")
+	// 	return nil
+	// }
+
 	ctx, done := context.WithTimeout(ctx, TaskTimeout*time.Second)
 	defer done()
 
@@ -51,6 +66,7 @@ func (t *FactExtractorTask) Execute(
 	}
 
 	log.Debugf("FactExtractorTask called for session %s", sessionID)
+	log.Debug("MAKING FACTSSSSSSSSSSSSSSS ============================================================================")
 
 	memory, err := t.appState.MemoryStore.GetMemory(
 		ctx,
@@ -59,11 +75,13 @@ func (t *FactExtractorTask) Execute(
 	)
 
 	if err != nil {
+	log.Debug("ERROR!? GET MEMORY =======================================================")
 		return fmt.Errorf("FactExtractorTask GetMemory failed: %w", err)
 	}
 
 	messages := memory.Messages
 	if messages == nil {
+	log.Debug("ERROR!? GET MEMORY EMPTY ======================================================")
 		log.Warningf("FactExtractorTask GetMemory returned no messages")
 		return nil
 	}
@@ -75,6 +93,7 @@ func (t *FactExtractorTask) Execute(
 		0,
 	)
 	if err != nil {
+	log.Debug("ERROR!? FACT EXTRATION FAILURE! =======================================================")
 		return fmt.Errorf("FactExtractorTask extractFacts failed: %w", err)
 	}
 
@@ -86,7 +105,7 @@ func (t *FactExtractorTask) Execute(
 
 	msg.Ack()
 
-	return nil 
+	return nil
 }
 
 func (t *FactExtractorTask) extractFacts(
@@ -117,8 +136,10 @@ func (t *FactExtractorTask) extractFacts(
 	// messagedJoined := strings.Join(messages, "\n")
 	var messagesTexts []string
 	for _, m := range messages {
-		messagesText := fmt.Sprintf("%s: %s", m.Role, m.Content)
-		messagesTexts = append(messagesTexts, messagesText)
+		if m.Role == "user" {
+			messagesText := fmt.Sprintf("Human: %s", m.Content)
+			messagesTexts = append(messagesTexts, messagesText)
+		}
 	}
 
 	var factsTexts []string
@@ -132,8 +153,12 @@ func (t *FactExtractorTask) extractFacts(
 	}
 
 	messagesJoined := strings.Join(messagesTexts, "\n")
-	factsJoined := strings.Join(factsTexts, "\n")
-	// prompt := defaultFactPromptTemplate
+	var factsJoined string
+	if len(factsTexts) > 0 {
+		factsJoined = strings.Join(factsTexts, "\n")
+	} else {
+		factsJoined = "None"
+	}
 
 	promptData := FactPromptTemplateData{
 		PrevFactsJoined: factsJoined,
@@ -150,17 +175,26 @@ func (t *FactExtractorTask) extractFacts(
 		parsedPrompt,
 		llms2.WithMaxTokens(FactMaxOutputTokens),
 	)
+
 	if err != nil {
 		return facts, fmt.Errorf("failed to call LLM: %w", err)
 	}
-
+	
 	newFacts = strings.TrimSpace(newFacts)
 	parsedFacts := t.parseFinalOutput(newFacts)
+	log.Debug("FACTS EXTRACTED ============================================================================")
+	log.Debug(newFacts)
+	log.Debug("FACTS EXTRACTED END ============================================================================")
+
+	log.Debug("FACTS PARSED ============================================================================")
+	log.Debug(parsedFacts)
+	log.Debug("FACTS PARSED END ============================================================================")
 
 	var finalFacts []models.Fact
 	for _, fact := range parsedFacts {
 		finalFacts = append(finalFacts, models.Fact{
-			Content: fact,
+			Content:       fact,
+			FactPointUUID: summary.UUID,
 		})
 	}
 
@@ -172,6 +206,10 @@ func (t *FactExtractorTask) parseFinalOutput(
 ) []string {
 	lines := strings.Split(raw, "\n") // Split the input string by newline
 	var facts []string                // Initialize an empty slice to hold the extracted facts
+		
+	if raw == "Fact: None" {
+		return facts
+	}
 
 	for _, line := range lines {
 		// Trim the "Fact: " prefix from each line

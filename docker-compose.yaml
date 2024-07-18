@@ -1,7 +1,7 @@
 services:
   db:
     image: ghcr.io/getzep/postgres:latest
-    container_name: zep-postgres
+    container_name: zep-postgres-custom
     restart: on-failure
     shm_size: "128mb" # Increase this if vacuuming fails with a "no space left on device" error
     environment:
@@ -21,7 +21,7 @@ services:
       retries: 5
   nlp:
     image: ghcr.io/getzep/zep-nlp-server:latest
-    container_name: zep-nlp
+    container_name: zep-nlp-custom
     env_file:
       - .env # You can set your embedding-related variables here
     restart: on-failure
@@ -35,7 +35,7 @@ services:
       start_period: 45s
   zep:
     image: ghcr.io/getzep/zep:latest
-    container_name: zep
+    container_name: zep-custom
     restart: on-failure
     depends_on:
       db:

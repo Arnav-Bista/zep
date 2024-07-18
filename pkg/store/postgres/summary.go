@@ -43,6 +43,7 @@ func (s *SummaryDAO) Create(
 		Metadata:         summary.Metadata,
 		SummaryPointUUID: summary.SummaryPointUUID,
 		TokenCount:       summary.TokenCount,
+		Facts:						summary.Facts,
 	}
 
 	_, err := s.db.NewInsert().Model(pgSummary).Exec(ctx)
@@ -57,6 +58,7 @@ func (s *SummaryDAO) Create(
 		SummaryPointUUID: pgSummary.SummaryPointUUID,
 		Metadata:         pgSummary.Metadata,
 		TokenCount:       pgSummary.TokenCount,
+		Facts:						pgSummary.Facts,
 	}, nil
 }
 
@@ -141,6 +143,7 @@ func (s *SummaryDAO) Get(ctx context.Context) (*models.Summary, error) {
 		SummaryPointUUID: summary.SummaryPointUUID,
 		Metadata:         summary.Metadata,
 		TokenCount:       summary.TokenCount,
+		Facts:						summary.Facts,
 	}, nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/getzep/zep/pkg/web"
 
@@ -57,7 +58,12 @@ func mergeMessagesSummaries(
 				Metadata:   summary.Metadata,
 				TokenCount: summary.TokenCount,
 			}
-			merged = append(merged, s)
+			f := models.Message{
+				Role: "fact extractor",
+				CreatedAt: summary.CreatedAt, 
+				Content: strings.Join(summary.Facts, "\n"),
+			}
+			merged = append(merged, s, f)
 			// Remove the summary from the map to prevent it from being added again
 			delete(summariesMap, message.UUID)
 		}
@@ -91,6 +97,7 @@ func (m *SessionDetails) Get(ctx context.Context, _ *models.AppState) error {
 		0,
 		9999,
 	)
+
 	if err != nil {
 		return err
 	}

@@ -101,6 +101,7 @@ func (tr *TaskRouter) AddTask(
 	if err != nil {
 		log.Fatalf("Failed to create subscriber for task %s: %v", taskType, err)
 	}
+	log.Debugf("Adding task: %s ================================================================", name)
 	tr.AddNoPublisherHandler(
 		name,
 		string(taskType),

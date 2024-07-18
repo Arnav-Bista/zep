@@ -657,6 +657,7 @@ func getMessageIndex(
 }
 
 // MessagesFromStoreSchema converts a slice of MessageStoreSchema into a slice of models.Message.
+
 func messagesFromStoreSchema(messages []MessageStoreSchema) []models.Message {
 	messageList := make([]models.Message, len(messages))
 	for i, msg := range messages {

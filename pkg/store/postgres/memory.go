@@ -73,22 +73,21 @@ func (m *MemoryDAO) Get(
 	}
 	// CUSTOM ADDITIONS
 	
-	factDAO, err := NewFactDAO(m.db, m.appState, m.sessionID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create factDAO: %w", err)
-	}
-
-	var facts []models.Fact
-	facts, err = factDAO.GetAll(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get facts: %w", err)
-	}
+	// factDAO, err := NewFactDAO(m.db, m.appState, m.sessionID)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to create factDAO: %w", err)
+	// }
+	//
+	// var facts []models.Fact
+	// facts, err = factDAO.GetAll(ctx, summary.UUID)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get facts: %w", err)
+	// }
 
 
 	memory := models.Memory{
 		Messages: messages,
 		Summary:  summary,
-		Facts:    facts,
 	}
 
 	return &memory, nil

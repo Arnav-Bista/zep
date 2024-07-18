@@ -28,6 +28,8 @@ func (b *BaseTask) HandleError(err error) {
 func Initialize(ctx context.Context, appState *models.AppState, router models.TaskRouter) {
 	log.Info("Initializing tasks")
 
+	// hasSummarized := make(chan bool)
+
 	addTask := func(ctx context.Context, name string, taskType models.TaskTopic, enabled bool, newTask func() models.Task) {
 		if enabled {
 			task := newTask()
@@ -42,7 +44,20 @@ func Initialize(ctx context.Context, appState *models.AppState, router models.Ta
 		models.MessageSummarizerTopic,
 		appState.Config.Extractors.Messages.Summarizer.Enabled,
 		func() models.Task { return NewMessageSummaryTask(appState) },
+		// func() models.Task { return NewMessageSummaryTask(appState, hasSummarized) },
 	)
+
+	// CUSTOM
+	// addTask(
+	// 	ctx,
+	// 	string(models.FactExtractrTopic),
+	// 	models.FactExtractrTopic,
+	// 	true, // Enabled
+	// 	// appState.Config.Extractors.Facts.Enabled,
+	// 	// func() models.Task { return NewFactExtractorTask(appState, hasSummarized) },
+	// 	func() models.Task { return NewFactExtractorTask(appState) },
+	// )
+	// END CUSTOM
 
 	addTask(
 		ctx,

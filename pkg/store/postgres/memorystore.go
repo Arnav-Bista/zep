@@ -147,6 +147,7 @@ func (pms *PostgresMemoryStore) PutMemory(
 	memoryMessages *models.Memory,
 	skipNotify bool,
 ) error {
+	log.Debugf("PutMemory called for session %s =============================================================", sessionID)
 	memoryDAO, err := NewMemoryDAO(pms.Client, pms.appState, sessionID)
 	if err != nil {
 		return fmt.Errorf("failed to create memoryDAO: %w", err)
@@ -298,24 +299,30 @@ func (pms *PostgresMemoryStore) PutSummaryEmbedding(
 
 // CUSTOM
 
-func (pms *PostgresMemoryStore) CreateFacts(
-	ctx context.Context,
-	sessionID string,
-	facts []models.Fact,
-) error {
-	factDAO, err := NewFactDAO(pms.Client, pms.appState, sessionID)
-	if err != nil {
-		return fmt.Errorf("failed to create factDAO: %w", err)
-	}
-	_, err = factDAO.CreateMany(ctx, facts)
-	if err != nil {
-		return fmt.Errorf("failed to create facts: %w", err)
-	}
-	// TODO: PUBLISHING
-	
-	return nil
-}
-
+// func (pms *PostgresMemoryStore) CreateFacts(
+// 	ctx context.Context,
+// 	sessionID string,
+// 	facts []models.Fact,
+// ) error {
+// 	factDAO, err := NewFactDAO(pms.Client, pms.appState, sessionID)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to create factDAO: %w", err)
+// 	}
+// 	_, err = factDAO.CreateMany(ctx, facts)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to create facts: %w", err)
+// 	}
+// 	// PUBLISHING!
+//
+// 	// task := models.FactExtractorTask{
+// 	// 	UUID: retFacts[0].UUID,
+// 	// }
+//
+//
+// 	
+// 	return nil
+// }
+//
 
 // CUSTOM END
 

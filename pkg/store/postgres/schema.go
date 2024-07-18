@@ -120,6 +120,7 @@ type SummaryStoreSchema struct {
 	SummaryPointUUID uuid.UUID              `bun:"type:uuid,notnull,unique"` // the UUID of the most recent message that was used to create the summary
 	Session          *SessionSchema         `bun:"rel:belongs-to,join:session_id=session_id,on_delete:cascade"`
 	Message          *MessageStoreSchema    `bun:"rel:belongs-to,join:summary_point_uuid=uuid,on_delete:cascade"`
+	Facts						 []string 							`bun:"type:jsonb,nullzero"`
 }
 
 var _ bun.BeforeAppendModelHook = (*SummaryStoreSchema)(nil)
@@ -155,61 +156,61 @@ func (s *SummaryVectorStoreSchema) BeforeAppendModel(_ context.Context, query bu
 	return nil
 }
 
-
-/*
-	START CUSTOM ADDITIONS
-*/
-
-type FactStoreSchema struct {
-	bun.BaseModel `bun:"table:fact,alias:su" ,yaml:"-"`
-
-	UUID             uuid.UUID              `bun:",pk,type:uuid,default:gen_random_uuid()"`
-	CreatedAt        time.Time              `bun:"type:timestamptz,notnull,default:current_timestamp"`
-	UpdatedAt        time.Time              `bun:"type:timestamptz,nullzero,default:current_timestamp"`
-	DeletedAt        time.Time              `bun:"type:timestamptz,soft_delete,nullzero"`
-	SessionID        string                 `bun:",notnull"`
-	Content          string                 `bun:",notnull"` 
-	Metadata         map[string]interface{} `bun:"type:jsonb,nullzero,json_use_number"`
-	TokenCount       int                    `bun:",notnull"`
-	// FactPointUUID    uuid.UUID              `bun:"type:uuid,notnull,unique"` // the UUID of the most recent summay
-	Session          *SessionSchema         `bun:"rel:belongs-to,join:session_id=session_id,on_delete:cascade"`
-	// Message          *MessageStoreSchema    `bun:"rel:belongs-to,join:summary_point_uuid=uuid,on_delete:cascade"`
-}
-
-
-var _ bun.BeforeAppendModelHook = (*FactStoreSchema)(nil)
-
-func (s *FactStoreSchema) BeforeAppendModel(_ context.Context, query bun.Query) error {
-	if _, ok := query.(*bun.UpdateQuery); ok {
-		s.UpdatedAt = time.Now()
-	}
-	return nil
-}
+//
+// /*
+// 	START CUSTOM ADDITIONS
+// */
+//
+// type FactStoreSchema struct {
+// 	bun.BaseModel `bun:"table:fact,alias:su" ,yaml:"-"`
+//
+// 	UUID             uuid.UUID              `bun:",pk,type:uuid,default:gen_random_uuid()"`
+// 	CreatedAt        time.Time              `bun:"type:timestamptz,notnull,default:current_timestamp"`
+// 	UpdatedAt        time.Time              `bun:"type:timestamptz,nullzero,default:current_timestamp"`
+// 	DeletedAt        time.Time              `bun:"type:timestamptz,soft_delete,nullzero"`
+// 	SessionID        string                 `bun:",notnull"`
+// 	Content          string                 `bun:",notnull"` 
+// 	Metadata         map[string]interface{} `bun:"type:jsonb,nullzero,json_use_number"`
+// 	TokenCount       int                    `bun:",notnull"`
+// 	FactPointUUID    uuid.UUID              `bun:"type:uuid,notnull"` // the UUID of the most recent summay
+// 	Session          *SessionSchema         `bun:"rel:belongs-to,join:session_id=session_id,on_delete:cascade"`
+// 	// Message          *MessageStoreSchema    `bun:"rel:belongs-to,join:summary_point_uuid=uuid,on_delete:cascade"`
+// }
+//
+//
+// var _ bun.BeforeAppendModelHook = (*FactStoreSchema)(nil)
+//
+// func (s *FactStoreSchema) BeforeAppendModel(_ context.Context, query bun.Query) error {
+// 	if _, ok := query.(*bun.UpdateQuery); ok {
+// 		s.UpdatedAt = time.Now()
+// 	}
+// 	return nil
+// }
 
 // MessageVectorStoreSchema stores the embeddings for a message.
-type FactVectorStoreSchema struct {
-	bun.BaseModel `bun:"table:fact_embedding,alias:me"`
-
-	UUID        uuid.UUID           `bun:",pk,type:uuid,default:gen_random_uuid()"`
-	CreatedAt   time.Time           `bun:"type:timestamptz,notnull,default:current_timestamp"`
-	UpdatedAt   time.Time           `bun:"type:timestamptz,nullzero,default:current_timestamp"`
-	DeletedAt   time.Time           `bun:"type:timestamptz,soft_delete,nullzero"`
-	SessionID   string              `bun:",notnull"`
-	FactUUID    uuid.UUID           `bun:"type:uuid,notnull,unique"`
-	Embedding   pgvector.Vector     `bun:"type:vector(1536)"`
-	IsEmbedded  bool                `bun:"type:bool,notnull,default:false"`
-	Session     *SessionSchema      `bun:"rel:belongs-to,join:session_id=session_id,on_delete:cascade"`
-	Fact				*FactStoreSchema		`bun:"rel:belongs-to,join:fact_uuid=uuid,on_delete:cascade"`
-}
-
-var _ bun.BeforeAppendModelHook = (*FactVectorStoreSchema)(nil)
-
-func (s *FactVectorStoreSchema) BeforeAppendModel(_ context.Context, query bun.Query) error {
-	if _, ok := query.(*bun.UpdateQuery); ok {
-		s.UpdatedAt = time.Now()
-	}
-	return nil
-}
+// type FactVectorStoreSchema struct {
+// 	bun.BaseModel `bun:"table:fact_embedding,alias:me"`
+//
+// 	UUID        uuid.UUID           `bun:",pk,type:uuid,default:gen_random_uuid()"`
+// 	CreatedAt   time.Time           `bun:"type:timestamptz,notnull,default:current_timestamp"`
+// 	UpdatedAt   time.Time           `bun:"type:timestamptz,nullzero,default:current_timestamp"`
+// 	DeletedAt   time.Time           `bun:"type:timestamptz,soft_delete,nullzero"`
+// 	SessionID   string              `bun:",notnull"`
+// 	FactUUID    uuid.UUID           `bun:"type:uuid,notnull,unique"`
+// 	Embedding   pgvector.Vector     `bun:"type:vector(1536)"`
+// 	IsEmbedded  bool                `bun:"type:bool,notnull,default:false"`
+// 	Session     *SessionSchema      `bun:"rel:belongs-to,join:session_id=session_id,on_delete:cascade"`
+// 	Fact				*FactStoreSchema		`bun:"rel:belongs-to,join:fact_uuid=uuid,on_delete:cascade"`
+// }
+//
+// var _ bun.BeforeAppendModelHook = (*FactVectorStoreSchema)(nil)
+//
+// func (s *FactVectorStoreSchema) BeforeAppendModel(_ context.Context, query bun.Query) error {
+// 	if _, ok := query.(*bun.UpdateQuery); ok {
+// 		s.UpdatedAt = time.Now()
+// 	}
+// 	return nil
+// }
 
 /*
 	END CUSTOM ADDITIONS 
@@ -270,8 +271,8 @@ var _ bun.AfterCreateTableHook = (*SummaryVectorStoreSchema)(nil)
 var _ bun.AfterCreateTableHook = (*UserSchema)(nil)
 
 // Custom
-var _ bun.AfterCreateTableHook = (*FactStoreSchema)(nil)
-var _ bun.AfterCreateTableHook = (*FactVectorStoreSchema)(nil)
+// var _ bun.AfterCreateTableHook = (*FactStoreSchema)(nil)
+// var _ bun.AfterCreateTableHook = (*FactVectorStoreSchema)(nil)
 
 // Create Collection Name index after table creation
 var _ bun.AfterCreateTableHook = (*DocumentCollectionSchema)(nil)
@@ -367,33 +368,33 @@ func (*SummaryVectorStoreSchema) AfterCreateTable(
 
 // CUSTOM
 
-func (*FactStoreSchema) AfterCreateTable(
-	ctx context.Context,
-	query *bun.CreateTableQuery,
-) error {
-	_, err := query.DB().NewCreateIndex().
-		Model((*FactStoreSchema)(nil)).
-		Index("factstore_session_id_idx").
-		IfNotExists().
-		Column("session_id").
-		IfNotExists().
-		Exec(ctx)
-	return err
-}
+// func (*FactStoreSchema) AfterCreateTable(
+// 	ctx context.Context,
+// 	query *bun.CreateTableQuery,
+// ) error {
+// 	_, err := query.DB().NewCreateIndex().
+// 		Model((*FactStoreSchema)(nil)).
+// 		Index("factstore_session_id_idx").
+// 		IfNotExists().
+// 		Column("session_id").
+// 		IfNotExists().
+// 		Exec(ctx)
+// 	return err
+// }
 
-func (*FactVectorStoreSchema) AfterCreateTable(
-	ctx context.Context,
-	query *bun.CreateTableQuery,
-) error {
-	_, err := query.DB().NewCreateIndex().
-		Model((*SummaryVectorStoreSchema)(nil)).
-		Index("factvecstore_session_id_idx").
-		IfNotExists().
-		Column("session_id").
-		IfNotExists().
-		Exec(ctx)
-	return err
-}
+// func (*FactVectorStoreSchema) AfterCreateTable(
+// 	ctx context.Context,
+// 	query *bun.CreateTableQuery,
+// ) error {
+// 	_, err := query.DB().NewCreateIndex().
+// 		Model((*SummaryVectorStoreSchema)(nil)).
+// 		Index("factvecstore_session_id_idx").
+// 		IfNotExists().
+// 		Column("session_id").
+// 		IfNotExists().
+// 		Exec(ctx)
+// 	return err
+// }
 
 // END CUSTOM
 
@@ -443,10 +444,6 @@ var messageTableList = []bun.AfterCreateTableHook{
 	&SummaryVectorStoreSchema{},
 	&SummaryStoreSchema{},
 	&MessageStoreSchema{},
-	// Custom
-	&FactStoreSchema{},
-	&FactVectorStoreSchema{},
-	// ---
 	&SessionSchema{},
 }
 
@@ -562,9 +559,9 @@ func CreateSchema(
 	}
 
 	// Custom 
-	if err := checkEmbeddingDims(ctx, appState, db, "fact", "fact_embedding"); err != nil {
-		return fmt.Errorf("error checking facg embedding dimensions: %w", err)
-	}
+	// if err := checkEmbeddingDims(ctx, appState, db, "fact", "fact_embedding"); err != nil {
+	// 	return fmt.Errorf("error checking fact embedding dimensions: %w", err)
+	// }
 	// ---
 
 	// Create HNSW index on message and summary embeddings if available
@@ -579,11 +576,10 @@ func CreateSchema(
 		}
 
 		// Custom 
-		if err := createHNSWIndex(ctx, db, "fact_embedding", c); err != nil {
-			return fmt.Errorf("error creating hnsw index: %w", err)
-		}
+		// if err := createHNSWIndex(ctx, db, "fact_embedding", c); err != nil {
+		// 	return fmt.Errorf("error creating hnsw index: %w", err)
+		// }
 
-		// --
 	}
 
 	return nil

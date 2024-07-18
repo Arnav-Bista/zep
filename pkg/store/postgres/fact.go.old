@@ -6,8 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
-	"github.com/pgvector/pgvector-go"
+	"sync"
 
 	"github.com/getzep/zep/pkg/models"
 	"github.com/google/uuid"
@@ -37,11 +36,12 @@ func (dao *FactDAO) Create(
 	fact *models.Fact,
 ) (*models.Fact, error) {
 	pgFact := FactStoreSchema{
-		UUID:       fact.UUID,
-		SessionID:  dao.sessionID,
-		Content:    fact.Content,
-		TokenCount: fact.TokenCount,
-		Metadata:   fact.Metadata,
+		UUID:          fact.UUID,
+		SessionID:     dao.sessionID,
+		Content:       fact.Content,
+		FactPointUUID: fact.FactPointUUID,
+		TokenCount:    fact.TokenCount,
+		Metadata:      fact.Metadata,
 	}
 
 	// Insert
@@ -70,20 +70,41 @@ func (dao *FactDAO) CreateMany(
 ) ([]models.Fact, error) {
 	if len(facts) == 0 {
 		return nil, nil
+	}	
+
+	// Get latest summary uuid
+	summaryDAO, err := NewSummaryDAO(dao.db, dao.appState, dao.sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create summaryDAO: %w", err)
 	}
+	
+	// Get the most recently added summary uuid
+	var summaryUUID uuid.UUID
+	e := summaryDAO.db.NewSelect(). 
+		Model(&SummaryStoreSchema{}). 
+		Where("session_id = ?", dao.sessionID).
+		Order("created_at DESC"). 
+		Limit(1). 
+		Column("uuid").
+		Scan(ctx, &summaryUUID)
+	if e != nil {
+		return nil, fmt.Errorf("failed to get summary uuid: %w", e)
+	}
+
 
 	pgFacts := make([]FactStoreSchema, len(facts))
 	for i, fact := range facts {
 		pgFacts[i] = FactStoreSchema{
-			UUID:       fact.UUID,
-			SessionID:  dao.sessionID,
-			Content:    fact.Content,
-			TokenCount: fact.TokenCount,
-			Metadata:   fact.Metadata,
+			UUID:          fact.UUID,
+			SessionID:     dao.sessionID,
+			Content:       fact.Content,
+			TokenCount:    fact.TokenCount,
+			Metadata:      fact.Metadata,
+			FactPointUUID: summaryUUID,
 		}
 	}
 
-	_, err := dao.db.NewInsert().
+	_, err = dao.db.NewInsert().
 		Model(&pgFacts).
 		Returning("*").
 		Exec(ctx)
@@ -182,11 +203,21 @@ func (dao *FactDAO) Get(
 // Get all for this session
 func (dao *FactDAO) GetAll(
 	ctx context.Context,
+	factPointUUID uuid.UUID,
 ) ([]models.Fact, error) {
 	var facts []FactStoreSchema
+	// Print the table column names
+	log.Debugf("********************************* ==================== \nColumns: %v", dao.db.NewSelect().Model((*FactStoreSchema)(nil)).Column());
+	// Print all Summary UUIDS  from the summary table
+	// Print the entire summary table
+	log.Debugf("*** SUMMARYS : %s", dao.db.NewSelect().Model((*SummaryStoreSchema)(nil)).Scan(ctx));
+	// log.Debugf("*** SUMMARY UUIDS: %s", dao.db.NewSelect().Model((*SummaryStoreSchema)(nil)).Column("uuid").Scan(ctx));
+	log.Debugf("*** FACTS : %s", dao.db.NewSelect().Model(&facts).Scan(ctx));
+
 	err := dao.db.NewSelect().
 		Model(&facts).
 		Where("session_id = ?", dao.sessionID).
+		Where("fact_point_uuid = ?", factPointUUID).
 		Scan(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get facts: %w", err)
@@ -234,4 +265,81 @@ func factsFromStoreSchema(facts []FactStoreSchema) []models.Fact {
 		}
 	}
 	return factList
+}
+
+func (pms *PostgresMemoryStore) GetFactList(
+	ctx context.Context,
+	sessionID string,
+	pageNumber int,
+	pageSize int,
+) (*models.FactListResponse, error) {
+	factDAO, err := NewFactDAO(pms.Client, pms.appState, sessionID)
+	if err != nil {
+		return nil, err
+	}
+
+	return factDAO.GetListBySession(ctx, pageNumber, pageSize)
+}
+
+func (dao *FactDAO) GetListBySession(
+	ctx context.Context,
+	currentPage int,
+	pageSize int,
+) (*models.FactListResponse, error) {
+
+	var wg sync.WaitGroup
+	var countErr error
+	var count int
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		count, countErr = dao.db.NewSelect().
+			Model(&FactStoreSchema{}).
+			Where("session_id = ?", dao.sessionID).
+			Count(ctx)
+	}()
+
+	var facts []FactStoreSchema
+	err := dao.db.NewSelect().
+		Model(&facts).
+		Where("session_id = ?", dao.sessionID).
+		OrderExpr("created_at ASC").
+		Offset((currentPage - 1) * pageSize).
+		Limit(pageSize).
+		Scan(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get facts: %w", err)
+	}
+	if len(facts) == 0 {
+		return &models.FactListResponse{
+			Facts:      []models.Fact{},
+			TotalCount: 0,
+			RowCount:   0,
+		}, nil
+	}
+
+	factList := make([]models.Fact, len(facts))
+	for i, fact := range facts {
+		factList[i] = models.Fact{
+			UUID:       fact.UUID,
+			CreatedAt:  fact.CreatedAt,
+			UpdatedAt:  fact.UpdatedAt,
+			Content:    fact.Content,
+			TokenCount: fact.TokenCount,
+			Metadata:   fact.Metadata,
+		}
+	}
+
+	wg.Wait()
+	if countErr != nil {
+		return nil, fmt.Errorf("failed to get fact count: %w", countErr)
+	}
+
+	return &models.FactListResponse{
+		Facts:      factList,
+		TotalCount: count,
+		RowCount:   len(facts),
+	}, nil
 }

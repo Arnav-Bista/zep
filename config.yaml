@@ -23,7 +23,7 @@ llm:
 nlp:
   server_url: "http://localhost:5557"
 memory:
-  message_window: 12
+  message_window: 6
 extractors:
   documents:
     embeddings:

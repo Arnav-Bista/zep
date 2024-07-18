@@ -18,6 +18,7 @@ const (
 	DocumentEmbedderTopic       TaskTopic = "document_embedder"
 	MessageSummaryEmbedderTopic TaskTopic = "message_summary_embedder"
 	MessageSummaryNERTopic      TaskTopic = "message_summary_ner"
+	FactExtractrTopic						TaskTopic = "fact_extractor"
 )
 
 type Task interface {
@@ -44,5 +45,9 @@ type MessageTask struct {
 }
 
 type MessageSummaryTask struct {
+	UUID uuid.UUID `json:"uuid"`
+}
+
+type FactExtractorTask struct {
 	UUID uuid.UUID `json:"uuid"`
 }

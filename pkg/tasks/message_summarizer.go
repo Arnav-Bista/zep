@@ -32,13 +32,18 @@ var _ models.Task = &MessageSummaryTask{}
 // if there is one.
 type MessageSummaryTask struct {
 	BaseTask
+	// hasSummarized chan <- bool
 }
 
-func NewMessageSummaryTask(appState *models.AppState) *MessageSummaryTask {
+func NewMessageSummaryTask(appState *models.AppState,
+
+// summaryChannel chan bool
+) *MessageSummaryTask {
 	return &MessageSummaryTask{
 		BaseTask: BaseTask{
 			appState: appState,
 		},
+		// hasSummarized: summaryChannel,
 	}
 }
 
@@ -49,6 +54,7 @@ func (t *MessageSummaryTask) Execute(
 	ctx, done := context.WithTimeout(ctx, TaskTimeout*time.Second)
 	defer done()
 
+	log.Debug("RAH RAH RAH ============================================================================")
 	sessionID := msg.Metadata.Get("session_id")
 	if sessionID == "" {
 		return errors.New("SummaryTask session_id is empty")
@@ -62,16 +68,21 @@ func (t *MessageSummaryTask) Execute(
 	}
 
 	// if no summary exists yet, we'll get all messages up to the message window
-	messagesSummary, err := t.appState.MemoryStore.GetMemory(
+	memory, err := t.appState.MemoryStore.GetMemory(
 		ctx,
 		sessionID,
 		0,
 	)
+
+	log.Debug("MEMORY ====")
+	log.Debug(memory.Summary.Facts)
+	log.Debug("MEMORY ==== ************")
+		
 	if err != nil {
 		return fmt.Errorf("SummaryTask get memory failed: %w", err)
 	}
 
-	messages := messagesSummary.Messages
+	messages := memory.Messages
 	if messages == nil {
 		log.Warningf("SummaryTask GetMemory returned no messages for session %s", sessionID)
 		return nil
@@ -80,18 +91,32 @@ func (t *MessageSummaryTask) Execute(
 	// drop empty messages
 	messages = dropEmptyMessages(messages)
 
+	log.Debug("NO NEED TO SUMMARISE RN ============================================================================")
 	// If we're still under the message window, we don't need to summarize.
 	if len(messages) < t.appState.Config.Memory.MessageWindow {
 		return nil
 	}
 
 	newSummary, err := t.summarize(
-		ctx, messages, messagesSummary.Summary, 0,
+		ctx, messages, memory.Summary, 0,
 	)
 	if err != nil {
 		return fmt.Errorf("SummaryTask summarize failed %w", err)
 	}
 
+
+	log.Debugf("STARTING THE FACT FACTORY =============")
+
+	facts, err := t.generateFacts(
+		ctx,
+		messages,
+		memory.Summary.Facts,
+	)
+
+	log.Debugf("FACT FACTORY DONE =============")
+	
+	newSummary.Facts = facts
+	
 	err = t.appState.MemoryStore.CreateSummary(
 		ctx,
 		sessionID,
@@ -113,6 +138,88 @@ func (t *MessageSummaryTask) Execute(
 
 	return nil
 }
+
+// CUSTOM ===
+
+func (t *MessageSummaryTask) generateFacts(
+	ctx context.Context,
+	messages []models.Message,
+	oldFacts []string,
+) ([]string, error) {
+	var facts []string
+
+	// Extract Human messages only
+	var humanMessages []string
+	for _, m := range messages {
+		if m.Role == "user" {
+			humanMessages = append(
+				humanMessages,
+				fmt.Sprintf("Human: %s", m.Content),
+			)
+		}
+	}
+	// Format existing facts
+	var oldFactsJoined string
+	if len(oldFacts) > 0 {
+		oldFactsJoined = "None"
+	} else {
+		for _, f := range oldFacts {
+			oldFactsJoined += fmt.Sprintf("Fact: %s\n", f)
+		}
+	}
+
+	promptData := FactPromptTemplateData{
+		PrevFactsJoined: oldFactsJoined,
+		MessagesJoined:  strings.Join(humanMessages, "\n"),
+	}
+
+	parsedPrompt, err := internal.ParsePrompt(defaultFactPromptTemplate, promptData)
+	if err != nil {
+		return facts, fmt.Errorf("failed to parse prompt: %w", err)
+	}
+
+	newFacts, err := t.appState.LLMClient.Call(
+		ctx,
+		parsedPrompt,
+		llms2.WithMaxTokens(MaxTokensFallback),
+	)
+
+	if err != nil {
+		return facts, fmt.Errorf("failed to call LLM: %w", err)
+	}
+
+	newFacts = strings.TrimSpace(newFacts)
+	parsedFacts := t.parseFinalOutput(newFacts)
+
+	log.Debugf("Parsed Facts ============")
+	log.Debug(parsedFacts)
+	log.Debugf("Parsed Facts ============")
+
+	return parsedFacts, nil
+}
+
+func (t *MessageSummaryTask) parseFinalOutput(
+	raw string,
+) []string {
+	lines := strings.Split(raw, "\n") // Split the input string by newline
+	var facts []string                // Initialize an empty slice to hold the extracted facts
+
+	if raw == "Fact: None" {
+		return facts
+	}
+
+	for _, line := range lines {
+		// Trim the "Fact: " prefix from each line
+		if strings.HasPrefix(line, "Fact: ") {
+			fact := strings.TrimPrefix(line, "Fact: ")
+			facts = append(facts, fact) // Add the fact to the slice
+		}
+	}
+
+	return facts // Return the slice of facts
+}
+
+// END CUSTOM ===
 
 func (t *MessageSummaryTask) HandleError(err error) {
 	log.Errorf("SummaryExtractor failed: %v", err)
