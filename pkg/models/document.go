@@ -12,12 +12,12 @@ type DistanceFunction string
 /* Collection  Models */
 
 type DocumentCollection struct {
-	UUID                      uuid.UUID              `bun:",pk,type:uuid,default:gen_random_uuid()"                     yaml:"uuid"`
-	CreatedAt                 time.Time              `bun:"type:timestamptz,nullzero,notnull,default:current_timestamp" yaml:"created_at"`
-	UpdatedAt                 time.Time              `bun:"type:timestamptz,nullzero,default:current_timestamp"         yaml:"updated_at"`
+	UUID                      uuid.UUID              `bun:",pk,type:char(36)"                     yaml:"uuid"`
+	CreatedAt                 time.Time              `bun:"type:timestamp,nullzero,notnull,default:CURRENT_TIMESTAMP" yaml:"created_at"`
+	UpdatedAt                 time.Time              `bun:"type:timestamp,nullzero,default:CURRENT_TIMESTAMP"         yaml:"updated_at"`
 	Name                      string                 `bun:",notnull,unique"                                             yaml:"name"`
 	Description               string                 `bun:",notnull"                                                    yaml:"description"`
-	Metadata                  map[string]interface{} `bun:"type:jsonb,nullzero,json_use_number"                         yaml:"metadata"`
+	Metadata                  map[string]interface{} `bun:"type:json,nullzero"                                         yaml:"metadata"`
 	TableName                 string                 `bun:",notnull"                                                    yaml:"table_name"`
 	EmbeddingModelName        string                 `bun:",notnull"                                                    yaml:"embedding_model_name"`
 	EmbeddingDimensions       int                    `bun:",notnull"                                                    yaml:"embedding_dimensions"`
@@ -68,13 +68,13 @@ type DocumentCollectionResponse struct {
 /* Document Models */
 
 type DocumentBase struct {
-	UUID       uuid.UUID              `bun:",pk,type:uuid,default:gen_random_uuid()"`
-	CreatedAt  time.Time              `bun:"type:timestamptz,nullzero,notnull,default:current_timestamp"`
-	UpdatedAt  time.Time              `bun:"type:timestamptz,nullzero,default:current_timestamp"`
-	DeletedAt  time.Time              `bun:"type:timestamptz,soft_delete,nullzero"`
+	UUID       uuid.UUID              `bun:",pk,type:char(36)"`
+	CreatedAt  time.Time              `bun:"type:timestamp,nullzero,notnull,default:CURRENT_TIMESTAMP"`
+	UpdatedAt  time.Time              `bun:"type:timestamp,nullzero,default:CURRENT_TIMESTAMP"`
+	DeletedAt  time.Time              `bun:"type:timestamp,soft_delete,nullzero"`
 	DocumentID string                 `bun:",unique,nullzero"`
 	Content    string                 `bun:",nullzero"`
-	Metadata   map[string]interface{} `bun:"type:jsonb,nullzero,json_use_number"`
+	Metadata   map[string]interface{} `bun:"type:jsonb,nullzero"`
 	IsEmbedded bool                   `bun:",nullzero"`
 }
 

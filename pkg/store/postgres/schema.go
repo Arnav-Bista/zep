@@ -120,7 +120,7 @@ type SummaryStoreSchema struct {
 	SummaryPointUUID uuid.UUID              `bun:"type:uuid,notnull,unique"` // the UUID of the most recent message that was used to create the summary
 	Session          *SessionSchema         `bun:"rel:belongs-to,join:session_id=session_id,on_delete:cascade"`
 	Message          *MessageStoreSchema    `bun:"rel:belongs-to,join:summary_point_uuid=uuid,on_delete:cascade"`
-	Facts						 []string 							`bun:"type:jsonb,nullzero"`
+	Facts            []string               `bun:"type:jsonb,nullzero"`
 }
 
 var _ bun.BeforeAppendModelHook = (*SummaryStoreSchema)(nil)
@@ -169,7 +169,7 @@ func (s *SummaryVectorStoreSchema) BeforeAppendModel(_ context.Context, query bu
 // 	UpdatedAt        time.Time              `bun:"type:timestamptz,nullzero,default:current_timestamp"`
 // 	DeletedAt        time.Time              `bun:"type:timestamptz,soft_delete,nullzero"`
 // 	SessionID        string                 `bun:",notnull"`
-// 	Content          string                 `bun:",notnull"` 
+// 	Content          string                 `bun:",notnull"`
 // 	Metadata         map[string]interface{} `bun:"type:jsonb,nullzero,json_use_number"`
 // 	TokenCount       int                    `bun:",notnull"`
 // 	FactPointUUID    uuid.UUID              `bun:"type:uuid,notnull"` // the UUID of the most recent summay
@@ -213,7 +213,7 @@ func (s *SummaryVectorStoreSchema) BeforeAppendModel(_ context.Context, query bu
 // }
 
 /*
-	END CUSTOM ADDITIONS 
+	END CUSTOM ADDITIONS
 */
 // DocumentCollectionSchema represents the schema for the DocumentCollectionDAO table.
 type DocumentCollectionSchema struct {
@@ -558,7 +558,7 @@ func CreateSchema(
 		return fmt.Errorf("error checking summary embedding dimensions: %w", err)
 	}
 
-	// Custom 
+	// Custom
 	// if err := checkEmbeddingDims(ctx, appState, db, "fact", "fact_embedding"); err != nil {
 	// 	return fmt.Errorf("error checking fact embedding dimensions: %w", err)
 	// }
@@ -575,7 +575,7 @@ func CreateSchema(
 			return fmt.Errorf("error creating hnsw index: %w", err)
 		}
 
-		// Custom 
+		// Custom
 		// if err := createHNSWIndex(ctx, db, "fact_embedding", c); err != nil {
 		// 	return fmt.Errorf("error creating hnsw index: %w", err)
 		// }

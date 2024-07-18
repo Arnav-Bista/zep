@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/getzep/zep/pkg/store/mysql"
 	"github.com/getzep/zep/pkg/store/postgres"
 	"github.com/getzep/zep/pkg/tasks"
 
@@ -35,6 +36,7 @@ const (
 	ErrPostgresDSNNotSet           = "store.postgres.dsn must be set"
 	ErrOtelEnabledButExporterEmpty = "OpenTelemtry is enabled but OTEL_EXPORTER_OTLP_ENDPOINT is not set"
 	StoreTypePostgres              = "postgres"
+	StoreTypeMySQL                 = "mysql"
 )
 
 // run is the entrypoint for the zep server
@@ -49,6 +51,7 @@ func run() {
 	log.Infof("Starting Zep server version %s", config.VersionString)
 
 	config.SetLogLevel(cfg)
+	log.Debugf("Config: %+v", cfg.Store)
 	appState := NewAppState(cfg)
 
 	if cfg.OpenTelemetry.Enabled {
@@ -117,6 +120,7 @@ func handleCLIOptions(cfg *config.Config) {
 
 // initializeStores initializes the memory and document stores based on the config file / ENV
 func initializeStores(ctx context.Context, appState *models.AppState) {
+	log.Debugf("Store configuration: %+v", appState.Config.Store)
 	if appState.Config.Store.Type == "" {
 		log.Fatal(ErrStoreTypeNotSet)
 	}
@@ -156,6 +160,33 @@ func initializeStores(ctx context.Context, appState *models.AppState) {
 		appState.DocumentStore = documentStore
 		appState.UserStore = userStore
 	// TODO: ADD MYSQL
+	case StoreTypeMySQL:
+		db, err := mysql.NewMySQLConn(appState)
+		if err != nil {
+			log.Fatalf("Failed to connect to database: %v\n", err)
+		}
+		memoryStore, err := mysql.NewMySQLMemoryStore(appState, db)
+		if err != nil {
+			log.Fatalf("unable to create memoryStore %v", err)
+		}
+		log.Debug("memoryStore created")
+
+		documentStore, err := mysql.NewDocumentStore(
+			ctx,
+			appState,
+			db,
+		)
+		if err != nil {
+			log.Fatalf("unable to create documentStore: %v", err)
+		}
+		log.Debug("documentStore created")
+
+		userStore := mysql.NewUserStoreDAO(db)
+		log.Debug("userStore created")
+
+		appState.MemoryStore = memoryStore
+		appState.DocumentStore = documentStore
+		appState.UserStore = userStore
 	default:
 		log.Fatal(
 			fmt.Sprintf(

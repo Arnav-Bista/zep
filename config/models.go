@@ -20,6 +20,7 @@ type Config struct {
 type StoreConfig struct {
 	Type     string         `mapstructure:"type"`
 	Postgres PostgresConfig `mapstructure:"postgres"`
+	MySQL    MySQLConfig    `mapstructure:"mysql"`
 }
 
 type LLM struct {
@@ -48,6 +49,14 @@ type MemoryConfig struct {
 
 type PostgresConfig struct {
 	DSN              string           `mapstructure:"dsn"`
+	AvailableIndexes AvailableIndexes `mapstructure:"available_indexes"`
+}
+
+type MySQLConfig struct {
+	Address          string           `mapstructure:"address"`
+	Username         string           `mapstructure:"username"`
+	Password         string           `mapstructure:"password"`
+	DatabaseName     string           `mapstructure:"database_name"`
 	AvailableIndexes AvailableIndexes `mapstructure:"available_indexes"`
 }
 

@@ -1,4 +1,4 @@
-package postgres
+package mysql
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/failsafe-go/failsafe-go/retrypolicy"
 	"github.com/getzep/zep/pkg/models"
 	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/driver/pgdriver"
+	"github.com/go-sql-driver/mysql"
 )
 
 var _ models.UserStore = &UserStoreDAO{}
@@ -44,7 +44,7 @@ func (dao *UserStoreDAO) Create(
 	}
 	_, err := dao.db.NewInsert().Model(userDB).Returning("*").Exec(ctx)
 	if err != nil {
-		if err, ok := err.(pgdriver.Error); ok && err.IntegrityViolation() {
+		if err, ok := err.(*mysql.MySQLError); ok && err.Number == 1062 {
 			return nil, models.NewBadRequestError(
 				"user already exists with user_id: " + user.UserID,
 			)
@@ -53,7 +53,7 @@ func (dao *UserStoreDAO) Create(
 	}
 
 	createdUser := &models.User{
-		UUID:      userDB.UUID.String(),
+		UUID:      userDB.UUID,
 		ID:        userDB.ID,
 		CreatedAt: userDB.CreatedAt,
 		UpdatedAt: userDB.UpdatedAt,
@@ -343,7 +343,7 @@ func (dao *UserStoreDAO) GetSessions(
 	sessions := make([]*models.Session, len(sessionsDB))
 	for i := range sessions {
 		sessions[i] = &models.Session{
-			UUID:      sessionsDB[i].UUID.String(),
+			UUID:      sessionsDB[i].UUID,
 			CreatedAt: sessionsDB[i].CreatedAt,
 			UpdatedAt: sessionsDB[i].UpdatedAt,
 			SessionID: sessionsDB[i].SessionID,
@@ -356,7 +356,7 @@ func (dao *UserStoreDAO) GetSessions(
 
 func userSchemaToUser(user *UserSchema) *models.User {
 	return &models.User{
-		UUID:      user.UUID.String(),
+		UUID:      user.UUID,
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,

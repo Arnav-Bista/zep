@@ -9,6 +9,7 @@ import (
 	"github.com/getzep/zep/internal"
 	"github.com/getzep/zep/pkg/models"
 	"github.com/getzep/zep/pkg/store/postgres"
+	// "github.com/getzep/zep/pkg/store/mysql"
 	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"

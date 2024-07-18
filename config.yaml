@@ -54,6 +54,12 @@ extractors:
 #      service: "openai"
 store:
   type: "postgres"
+  mysql:
+    address: "mysql-build.ixigo.com"
+    username: "ixigo"
+    password: "n0m0re1A"
+    database_name: "trip_planner"
+  # type: "postgres"
   postgres:
     dsn: "postgres://postgres:postgres@localhost:5432/?sslmode=disable"
 server:

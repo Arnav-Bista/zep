@@ -3,12 +3,10 @@ package models
 import (
 	"context"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type User struct {
-	UUID      uuid.UUID              `json:"uuid"`
+	UUID      string                 `json:"uuid"`
 	ID        int64                  `json:"id"`
 	CreatedAt time.Time              `json:"created_at"`
 	UpdatedAt time.Time              `json:"updated_at"`
@@ -35,7 +33,7 @@ type CreateUserRequest struct {
 }
 
 type UpdateUserRequest struct {
-	UUID      uuid.UUID              `json:"uuid"`
+	UUID      string                 `json:"uuid"`
 	UserID    string                 `json:"user_id"`
 	Email     string                 `json:"email"`
 	FirstName string                 `json:"first_name"`

@@ -1,4 +1,4 @@
-package postgres
+package mysql
 
 import (
 	"context"
@@ -7,11 +7,10 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/getzep/zep/pkg/models"
+	"github.com/go-sql-driver/mysql"
 	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/driver/pgdriver"
 )
 
 var _ models.SessionManager = &SessionDAO{}
@@ -49,8 +48,8 @@ func (dao *SessionDAO) Create(
 		Returning("*").
 		Exec(ctx)
 	if err != nil {
-		if err, ok := err.(pgdriver.Error); ok && err.IntegrityViolation() {
-			if strings.Contains(err.Error(), "user") {
+		if err, ok := err.(*mysql.MySQLError); ok && err.Number == 1062 {
+			if strings.Contains(err.Message, "user") {
 				return nil, models.NewBadRequestError(
 					"user does not exist with user_id: " + *session.UserID,
 				)
@@ -63,7 +62,7 @@ func (dao *SessionDAO) Create(
 	}
 
 	return &models.Session{
-		UUID:      sessionDB.UUID.String(),
+		UUID:      sessionDB.UUID,
 		ID:        sessionDB.ID,
 		CreatedAt: sessionDB.CreatedAt,
 		UpdatedAt: sessionDB.UpdatedAt,
@@ -90,7 +89,7 @@ func (dao *SessionDAO) Get(ctx context.Context, sessionID string) (*models.Sessi
 	}
 
 	retSession := models.Session{
-		UUID:      session.UUID.String(),
+		UUID:      session.UUID,
 		ID:        session.ID,
 		CreatedAt: session.CreatedAt,
 		UpdatedAt: session.UpdatedAt,
@@ -160,7 +159,7 @@ func (dao *SessionDAO) updateSession(
 	sessionDB := SessionSchema{
 		SessionID: session.SessionID,
 		Metadata:  session.Metadata,
-		DeletedAt: time.Time{}, // Intentionally overwrite soft-delete with zero value
+		// DeletedAt: sql.NullTime{}, // Intentionally overwrite soft-delete with zero value
 	}
 	var columns = []string{"deleted_at", "updated_at"}
 	if session.Metadata != nil {
@@ -188,7 +187,7 @@ func (dao *SessionDAO) updateSession(
 	}
 
 	returnedSession := models.Session{
-		UUID:      sessionDB.UUID.String(),
+		UUID:      sessionDB.UUID,
 		ID:        sessionDB.ID,
 		CreatedAt: sessionDB.CreatedAt,
 		UpdatedAt: sessionDB.UpdatedAt,
@@ -341,7 +340,7 @@ func sessionSchemaToSession(sessions []SessionSchema) []*models.Session {
 	retSessions := make([]*models.Session, len(sessions))
 	for i := range sessions {
 		retSessions[i] = &models.Session{
-			UUID:      sessions[i].UUID.String(),
+			UUID:      sessions[i].UUID,
 			ID:        sessions[i].ID,
 			CreatedAt: sessions[i].CreatedAt,
 			UpdatedAt: sessions[i].UpdatedAt,

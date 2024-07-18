@@ -3,12 +3,10 @@ package models
 import (
 	"context"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Session struct {
-	UUID      uuid.UUID              `json:"uuid"`
+	UUID      string                 `json:"uuid"`
 	ID        int64                  `json:"id"`
 	CreatedAt time.Time              `json:"created_at"`
 	UpdatedAt time.Time              `json:"updated_at"`
