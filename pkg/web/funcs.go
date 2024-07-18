@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"reflect"
+	"strings"
 
 	"github.com/dustin/go-humanize"
 	"github.com/getzep/sprig/v3"
@@ -79,6 +80,9 @@ func TemplateFuncs() template.FuncMap {
 		"ToJSON":       JSONSerializeHTML,
 		"CommaInt":     humanize.Comma,
 		"RelativeTime": humanize.Time,
+		"splitLines": func(s string) []string {
+			return strings.Split(s, "\n")
+		},
 	}
 
 	for k, v := range sprig.FuncMap() {

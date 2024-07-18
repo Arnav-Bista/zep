@@ -248,6 +248,7 @@ func (s *SummaryDAO) GetList(ctx context.Context,
 			SummaryPointUUID: summary.SummaryPointUUID,
 			Metadata:         summary.Metadata,
 			TokenCount:       summary.TokenCount,
+			Facts:            summary.Facts,
 		}
 	}
 

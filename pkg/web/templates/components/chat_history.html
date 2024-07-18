@@ -20,6 +20,8 @@
                                 {{ range $i, $msg := .Data.Messages }}
                                 {{ if eq $msg.Role "summarizer" }}
                                     {{ template "ChatBubble" dict "Message" $msg "BgColor" "bg-fuchsia-50" }}
+                                {{ else if eq $msg.Role "fact extractor" }}
+                                    {{ template "FactListing" dict "Message" $msg "BgColor" "bg-indigo-50" }}
                                 {{ else }}
                                     {{ if mod $i 2 }}
                                         {{ template "ChatBubble" dict "Message" $msg "BgColor" "bg-gray-50 dark:bg-gray-100" }}
@@ -60,6 +62,30 @@
                 <!-- Metadata Content -->
                 <div class="w-[50%] pl-6 text-xs max-h-44 overflow-y-auto">
                     {{ empty .Message.Metadata | ternary "No metadata" (ToJSON .Message.Metadata) }}
+                </div>
+            </div>
+        </div>
+        <!-- Consolidated Card End -->
+    </div>
+</li>
+{{ end }}
+
+{{ define "FactListing" }}
+<li class="ml-auto flex justify-end gap-x-2 sm:gap-x-4 space-y-3 ">
+    <div class="grow flex">
+        <!-- Consolidated Card -->
+        <div class="inline-block {{.BgColor}} border-gray-200 border rounded-lg p-4 shadow-sm flex-grow max-h-60">
+            <p class="text-xs font-light mb-3 ">
+                {{ .Message.Role }} <span class="px-3">|</span> {{ .Message.CreatedAt.Format "2006-01-02 15:04:05" }} <span class="px-3">|</span> {{ .Message.TokenCount }} tokens
+            </p>
+            <div class="flex justify-between">
+                <!-- Message Content -->
+                <div class="border-r border-gray-200 dark:border-gray-50 w-full pr-6 max-h-44 overflow-y-auto">
+                    <ul class="text-sm list-disc list-inside">
+                        {{ range splitLines .Message.Content }}
+                            <li>{{ . }}</li>
+                        {{ end }}
+                    </ul>
                 </div>
             </div>
         </div>

@@ -155,6 +155,7 @@ func initializeStores(ctx context.Context, appState *models.AppState) {
 		appState.MemoryStore = memoryStore
 		appState.DocumentStore = documentStore
 		appState.UserStore = userStore
+	// TODO: ADD MYSQL
 	default:
 		log.Fatal(
 			fmt.Sprintf(
