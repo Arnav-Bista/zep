@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ThreeDotsLabs/watermill/message"
@@ -54,7 +55,6 @@ func (t *MessageSummaryTask) Execute(
 	ctx, done := context.WithTimeout(ctx, TaskTimeout*time.Second)
 	defer done()
 
-	log.Debug("RAH RAH RAH ============================================================================")
 	sessionID := msg.Metadata.Get("session_id")
 	if sessionID == "" {
 		return errors.New("SummaryTask session_id is empty")
@@ -74,10 +74,6 @@ func (t *MessageSummaryTask) Execute(
 		0,
 	)
 
-	log.Debug("MEMORY ====")
-	log.Debug(memory.Summary.Facts)
-	log.Debug("MEMORY ==== ************")
-		
 	if err != nil {
 		return fmt.Errorf("SummaryTask get memory failed: %w", err)
 	}
@@ -91,32 +87,49 @@ func (t *MessageSummaryTask) Execute(
 	// drop empty messages
 	messages = dropEmptyMessages(messages)
 
-	log.Debug("NO NEED TO SUMMARISE RN ============================================================================")
 	// If we're still under the message window, we don't need to summarize.
 	if len(messages) < t.appState.Config.Memory.MessageWindow {
 		return nil
 	}
 
-	newSummary, err := t.summarize(
-		ctx, messages, memory.Summary, 0,
-	)
-	if err != nil {
-		return fmt.Errorf("SummaryTask summarize failed %w", err)
+	wg := sync.WaitGroup{}
+	// Make it happen concurrently
+	wg.Add(2)
+
+	var newSummary *models.Summary
+	var summaryError error
+
+	var facts []string
+	var factError error
+
+	go func() {
+		newSummary, summaryError = t.summarize(
+			ctx, messages, memory.Summary, 0,
+		)
+		wg.Done()
+	}()
+
+	go func() {
+		facts, factError = t.generateFacts(
+			ctx,
+			messages,
+			memory.Summary.Facts,
+		)
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	if summaryError != nil {
+		return fmt.Errorf("SummaryTask failed to summarize: %w", summaryError)
 	}
 
+	if factError != nil {
+		return fmt.Errorf("SummaryTask failed to generate facts: %w", factError)
+	}
 
-	log.Debugf("STARTING THE FACT FACTORY =============")
-
-	facts, err := t.generateFacts(
-		ctx,
-		messages,
-		memory.Summary.Facts,
-	)
-
-	log.Debugf("FACT FACTORY DONE =============")
-	
 	newSummary.Facts = facts
-	
+
 	err = t.appState.MemoryStore.CreateSummary(
 		ctx,
 		sessionID,
@@ -212,6 +225,9 @@ func (t *MessageSummaryTask) parseFinalOutput(
 		// Trim the "Fact: " prefix from each line
 		if strings.HasPrefix(line, "Fact: ") {
 			fact := strings.TrimPrefix(line, "Fact: ")
+			if fact == "None" {
+				continue
+			}
 			facts = append(facts, fact) // Add the fact to the slice
 		}
 	}

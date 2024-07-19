@@ -138,10 +138,12 @@ Format Preferences: Write each facts or preference on a new line in the format
 indivisible preference).
 
 Handle Edge Cases: If there are no new facts or preferences to add, no
-preferences to edit, or if the conversation is meaningless, return
-"Preference: None." Retain Unchanged Preferences: Ensure that all unchanged
-preferences from previous conversations are included in the new preferences
-output.
+preferences to edit, or if the conversation is meaningless, return the previous facts and preferences.
+If there are no existing facts or preferences, return "Fact: None". 
+
+Retain Unchanged Preferences: Ensure that all unchanged
+facts and preferences from previous conversations are included in the new preferences
+output. 
 
 Example:
 User Messages:

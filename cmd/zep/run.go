@@ -51,7 +51,6 @@ func run() {
 	log.Infof("Starting Zep server version %s", config.VersionString)
 
 	config.SetLogLevel(cfg)
-	log.Debugf("Config: %+v", cfg.Store)
 	appState := NewAppState(cfg)
 
 	if cfg.OpenTelemetry.Enabled {

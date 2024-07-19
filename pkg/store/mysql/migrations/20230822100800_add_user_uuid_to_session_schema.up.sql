@@ -1,57 +1,65 @@
--- Check and add column user_id if it does not exist
 DELIMITER $$
 
+-- Add user_id column if not exists
 CREATE PROCEDURE AddUserIdColumnIfNotExists()
 BEGIN
-    IF NOT EXISTS (SELECT 1 
-                   FROM INFORMATION_SCHEMA.COLUMNS 
-                   WHERE TABLE_NAME = 'session' 
-                   AND COLUMN_NAME = 'user_id') THEN
-        ALTER TABLE session ADD COLUMN user_id CHAR(36);
+    IF NOT EXISTS(
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'session'
+          AND column_name = 'user_id') THEN
+        ALTER TABLE session
+            ADD COLUMN user_id CHAR(36);
     END IF;
 END$$
 
 CALL AddUserIdColumnIfNotExists();
 DROP PROCEDURE AddUserIdColumnIfNotExists();
 
-DELIMITER ;
+DELIMITER ; -- Reset the delimiter
 
 --bun:split
 
--- Check and add index session_user_id_idx if it does not exist
 DELIMITER $$
 
-CREATE PROCEDURE AddUserIdIndexIfNotExists()
+-- Create index session_user_id_idx if not exists
+CREATE PROCEDURE AddSessionUserIdIndexIfNotExists()
 BEGIN
-    IF NOT EXISTS (SELECT 1 
-                   FROM INFORMATION_SCHEMA.STATISTICS 
-                   WHERE TABLE_NAME = 'session' 
-                   AND INDEX_NAME = 'session_user_id_idx') THEN
+    IF NOT EXISTS(
+        SELECT 1
+        FROM information_schema.statistics
+        WHERE table_schema = DATABASE()
+          AND table_name = 'session'
+          AND index_name = 'session_user_id_idx') THEN
         CREATE INDEX session_user_id_idx ON session(user_id);
     END IF;
 END$$
 
-CALL AddUserIdIndexIfNotExists();
-DROP PROCEDURE AddUserIdIndexIfNotExists();
+CALL AddSessionUserIdIndexIfNotExists();
+DROP PROCEDURE AddSessionUserIdIndexIfNotExists();
 
-DELIMITER ;
+DELIMITER ; -- Reset the delimiter
 
 --bun:split
 
--- Check and add column id if it does not exist
 DELIMITER $$
 
+-- Add id column if not exists
 CREATE PROCEDURE AddIdColumnIfNotExists()
 BEGIN
-    IF NOT EXISTS (SELECT 1 
-                   FROM INFORMATION_SCHEMA.COLUMNS 
-                   WHERE TABLE_NAME = 'session' 
-                   AND COLUMN_NAME = 'id') THEN
-        ALTER TABLE session ADD COLUMN id BIGINT AUTO_INCREMENT PRIMARY KEY;
+    IF NOT EXISTS(
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'session'
+          AND column_name = 'id') THEN
+        ALTER TABLE session
+            ADD COLUMN id BIGINT AUTO_INCREMENT PRIMARY KEY;
     END IF;
 END$$
 
 CALL AddIdColumnIfNotExists();
 DROP PROCEDURE AddIdColumnIfNotExists();
 
-DELIMITER ;
+DELIMITER ; -- Reset the delimiter

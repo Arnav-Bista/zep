@@ -16,6 +16,7 @@ var log = internal.GetLogger()
 var sqlMigrations embed.FS
 
 func Migrate(ctx context.Context, db *bun.DB) error {
+	return nil;
 	migrations := migrate.NewMigrations()
 
 	if err := migrations.Discover(sqlMigrations); err != nil {
@@ -39,6 +40,7 @@ func Migrate(ctx context.Context, db *bun.DB) error {
 	}(migrator, ctx)
 
 	group, err := migrator.Migrate(ctx)
+	fmt.Printf("ERROR: %w\n", err)
 	if err != nil {
 		defer func(migrator *migrate.Migrator, ctx context.Context) {
 			err := migrator.Unlock(ctx)
@@ -50,7 +52,7 @@ func Migrate(ctx context.Context, db *bun.DB) error {
 		if err != nil {
 			panic(fmt.Errorf("failed to apply migrations and rollback was unsuccessful: %w", err))
 		}
-
+		fmt.Printf("ERROR: %+v\n", err)
 		panic(fmt.Errorf("failed to apply migrations. rolled back successfully. %w", err))
 	}
 

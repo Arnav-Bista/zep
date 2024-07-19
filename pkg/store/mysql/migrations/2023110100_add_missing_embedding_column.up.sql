@@ -1,17 +1,21 @@
--- Check and add column embedding to message_embedding if it exists
 DELIMITER $$
 
+-- Add column embedding to message_embedding if it exists and column does not exist
 CREATE PROCEDURE AddEmbeddingColumnToMessageEmbeddingIfExists()
 BEGIN
-    IF (SELECT COUNT(*) 
-        FROM INFORMATION_SCHEMA.TABLES 
-        WHERE TABLE_NAME = 'message_embedding') > 0 THEN
-        IF NOT EXISTS (SELECT * 
-                       FROM INFORMATION_SCHEMA.COLUMNS 
-                       WHERE TABLE_NAME = 'message_embedding' 
-                       AND COLUMN_NAME = 'embedding') THEN
-            ALTER TABLE message_embedding 
-                ADD COLUMN embedding JSON;
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE()
+          AND table_name = 'message_embedding') THEN
+        IF NOT EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = 'message_embedding'
+              AND column_name = 'embedding') THEN
+            ALTER TABLE message_embedding
+                ADD COLUMN embedding JSON; -- Using JSON as an alternative to vector type
         END IF;
     END IF;
 END$$
@@ -23,20 +27,24 @@ DELIMITER ;
 
 --bun:split
 
--- Check and add column embedding to summary_embedding if it exists
 DELIMITER $$
 
+-- Add column embedding to summary_embedding if it exists and column does not exist
 CREATE PROCEDURE AddEmbeddingColumnToSummaryEmbeddingIfExists()
 BEGIN
-    IF (SELECT COUNT(*) 
-        FROM INFORMATION_SCHEMA.TABLES 
-        WHERE TABLE_NAME = 'summary_embedding') > 0 THEN
-        IF NOT EXISTS (SELECT * 
-                       FROM INFORMATION_SCHEMA.COLUMNS 
-                       WHERE TABLE_NAME = 'summary_embedding' 
-                       AND COLUMN_NAME = 'embedding') THEN
-            ALTER TABLE summary_embedding 
-                ADD COLUMN embedding JSON;
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE()
+          AND table_name = 'summary_embedding') THEN
+        IF NOT EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = 'summary_embedding'
+              AND column_name = 'embedding') THEN
+            ALTER TABLE summary_embedding
+                ADD COLUMN embedding JSON; -- Using JSON as an alternative to vector type
         END IF;
     END IF;
 END$$

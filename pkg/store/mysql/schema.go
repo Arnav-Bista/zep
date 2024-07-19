@@ -35,13 +35,12 @@ type SessionSchema struct {
 	UUID      string                 `bun:",pk,type:char(36)"                          yaml:"uuid,omitempty"`
 	ID        int64                  `bun:","                                        yaml:"id,omitempty"` // used as a cursor for pagination
 	SessionID string                 `bun:",unique,notnull"                                       yaml:"session_id,omitempty"`
-	CreatedAt time.Time              `bun:"type:timestamp,notnull,default:current_timestamp()"    yaml:"created_at,omitempty"`
-	UpdatedAt time.Time              `bun:"type:timestamp,notnull,default:current_timestamp ON UPDATE current_timestamp" yaml:"updated_at,omitempty"`
-	DeletedAt sql.NullTime           `bun:"type:timestamp,null" yaml:"deleted_at,omitempty"`
+	CreatedAt time.Time              `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP()"    yaml:"created_at,omitempty"`
+	UpdatedAt time.Time              `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()" yaml:"updated_at,omitempty"`
+	DeletedAt sql.NullTime           `bun:"type:timestamp,nullzero" yaml:"deleted_at,omitempty"`
 	Metadata  map[string]interface{} `bun:"type:json,nullzero"                                    yaml:"metadata,omitempty"`
-	// UserUUID must be pointer type in order to be nullable
-	UserID *string     `bun:","                                                           yaml:"user_id,omitempty"`
-	User   *UserSchema `bun:"rel:belongs-to,join:user_id=user_id,on_delete:cascade"       yaml:"-"`
+	UserID    *string                `bun:","                                                           yaml:"user_id,omitempty"`
+	User      *UserSchema            `bun:"rel:belongs-to,join:user_id=user_id,on_delete:cascade"       yaml:"-"`
 }
 
 var _ bun.BeforeAppendModelHook = (*SessionSchema)(nil)
@@ -58,10 +57,10 @@ type MessageStoreSchema struct {
 
 	UUID uuid.UUID `bun:",pk,type:char(36)"                     yaml:"uuid"`
 	// ID is used only for sorting / slicing purposes as we can't sort by CreatedAt for messages created simultaneously
-	ID         int64                  `bun:",autoincrement"                                              yaml:"id,omitempty"`
-	CreatedAt  time.Time              `bun:"type:timestamp,notnull,default:current_timestamp()"          yaml:"created_at,omitempty"`
-	UpdatedAt  time.Time              `bun:"type:timestamp,notnull,default:current_timestamp ON UPDATE current_timestamp" yaml:"updated_at,omitempty"`
-	DeletedAt  sql.NullTime           `bun:"type:timestamp,null" yaml:"deleted_at,omitempty"`
+	ID         int64                  `bun:","                                              yaml:"id,omitempty"`
+	CreatedAt  time.Time              `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP()"          yaml:"created_at,omitempty"`
+	UpdatedAt  time.Time              `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()" yaml:"updated_at,omitempty"`
+	DeletedAt  sql.NullTime           `bun:"type:timestamp,nullzero" yaml:"deleted_at,omitempty"`
 	SessionID  string                 `bun:",notnull"                                                    yaml:"session_id,omitempty"`
 	Role       string                 `bun:",notnull"                                                    yaml:"role,omitempty"`
 	Content    string                 `bun:",notnull"                                                    yaml:"content,omitempty"`
@@ -83,10 +82,10 @@ func (s *MessageStoreSchema) BeforeAppendModel(_ context.Context, query bun.Quer
 type MessageVectorStoreSchema struct {
 	bun.BaseModel `bun:"table:message_embedding,alias:me"`
 
-	UUID        uuid.UUID           `bun:",pk,type:char(36),default:uuid()"`
-	CreatedAt   time.Time           `bun:"type:timestamp,notnull,default:current_timestamp()"`
-	UpdatedAt   time.Time           `bun:"type:timestamp,notnull,default:current_timestamp ON UPDATE current_timestamp"`
-	DeletedAt   sql.NullTime        `bun:"type:timestamp,null" yaml:"deleted_at,omitempty"`
+	UUID        uuid.UUID           `bun:",pk,type:char(36)"` // Removed default:uuid()
+	CreatedAt   time.Time           `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP()"`
+	UpdatedAt   time.Time           `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()"`
+	DeletedAt   sql.NullTime        `bun:"type:timestamp,nullzero" yaml:"deleted_at,omitempty"`
 	SessionID   string              `bun:",notnull"`
 	MessageUUID uuid.UUID           `bun:"type:char(36),notnull,unique"`
 	Embedding   []float32           `bun:"type:json"`
@@ -107,10 +106,10 @@ func (s *MessageVectorStoreSchema) BeforeAppendModel(_ context.Context, query bu
 type SummaryStoreSchema struct {
 	bun.BaseModel `bun:"table:summary,alias:su" ,yaml:"-"`
 
-	UUID             uuid.UUID              `bun:",pk,type:char(36),default:uuid()"`
-	CreatedAt        time.Time              `bun:"type:timestamp,notnull,default:current_timestamp()"`
-	UpdatedAt        time.Time              `bun:"type:timestamp,notnull,default:current_timestamp ON UPDATE current_timestamp"`
-	DeletedAt        sql.NullTime           `bun:"type:timestamp,null" yaml:"deleted_at,omitempty"`
+	UUID             uuid.UUID              `bun:",pk,type:char(36)"` // Removed default:uuid()
+	CreatedAt        time.Time              `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP()"`
+	UpdatedAt        time.Time              `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()"`
+	DeletedAt        sql.NullTime           `bun:"type:timestamp,nullzero" yaml:"deleted_at,omitempty"`
 	SessionID        string                 `bun:",notnull"`
 	Content          string                 `bun:",nullzero"` // allow null as we might want to use Metadata without a summary
 	Metadata         map[string]interface{} `bun:"type:json,nullzero"`
@@ -133,10 +132,10 @@ func (s *SummaryStoreSchema) BeforeAppendModel(_ context.Context, query bun.Quer
 type SummaryVectorStoreSchema struct {
 	bun.BaseModel `bun:"table:summary_embedding,alias:se" yaml:"-"`
 
-	UUID        uuid.UUID           `bun:",pk,type:char(36),default:uuid()"`
-	CreatedAt   time.Time           `bun:"type:timestamp,notnull,default:current_timestamp()"`
-	UpdatedAt   time.Time           `bun:"type:timestamp,notnull,default:current_timestamp ON UPDATE current_timestamp"`
-	DeletedAt   sql.NullTime        `bun:"type:timestamp,null" yaml:"deleted_at,omitempty"`
+	UUID        uuid.UUID           `bun:",pk,type:char(36)"` // Removed default:uuid()
+	CreatedAt   time.Time           `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP()"`
+	UpdatedAt   time.Time           `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()"`
+	DeletedAt   sql.NullTime        `bun:"type:timestamp,nullzero" yaml:"deleted_at,omitempty"`
 	SessionID   string              `bun:",notnull"`
 	SummaryUUID uuid.UUID           `bun:"type:char(36),notnull,unique"`
 	Embedding   []float32           `bun:"type:json"`
@@ -185,9 +184,9 @@ type UserSchema struct {
 
 	UUID      string                 `bun:",pk,type:char(36),notnull"                  yaml:"uuid,omitempty"`
 	ID        int64                  `bun:""                                    yaml:"id,omitempty"` // used as a cursor for pagination
-	CreatedAt time.Time              `bun:"type:timestamp,notnull,default:current_timestamp()" yaml:"created_at,omitempty"`
-	UpdatedAt time.Time              `bun:"type:timestamp,notnull,default:current_timestamp ON UPDATE current_timestamp" yaml:"updated_at,omitempty"`
-	DeletedAt sql.NullTime           `bun:"type:timestamp,null" yaml:"deleted_at,omitempty"`
+	CreatedAt time.Time              `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP()" yaml:"created_at,omitempty"`
+	UpdatedAt time.Time              `bun:"type:timestamp,notnull,default:CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()" yaml:"updated_at,omitempty"`
+	DeletedAt sql.NullTime           `bun:"type:timestamp,nullzero" yaml:"deleted_at,omitempty"`
 	UserID    string                 `bun:",unique,notnull"                                   yaml:"user_id,omitempty"`
 	Email     string                 `bun:","                                                 yaml:"email,omitempty"`
 	FirstName string                 `bun:","                                                 yaml:"first_name,omitempty"`
