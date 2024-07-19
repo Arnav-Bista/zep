@@ -116,6 +116,7 @@ type SummarizerConfig struct {
 
 type CustomPromptsConfig struct {
 	SummarizerPrompts ExtractorPromptsConfig `mapstructure:"summarizer_prompts"`
+	FactExtractorPrompt string `mapstructure:"fact_extractor_prompt"`
 }
 
 type ExtractorPromptsConfig struct {

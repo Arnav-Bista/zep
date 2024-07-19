@@ -185,8 +185,12 @@ func (t *MessageSummaryTask) generateFacts(
 		PrevFactsJoined: oldFactsJoined,
 		MessagesJoined:  strings.Join(humanMessages, "\n"),
 	}
-
-	parsedPrompt, err := internal.ParsePrompt(defaultFactPromptTemplate, promptData)
+	
+	factPrompt := t.appState.Config.CustomPrompts.FactExtractorPrompt;
+	if factPrompt == "" {
+		factPrompt = defaultFactPromptTemplate
+	}
+	parsedPrompt, err := internal.ParsePrompt(factPrompt, promptData)
 	if err != nil {
 		return facts, fmt.Errorf("failed to parse prompt: %w", err)
 	}
